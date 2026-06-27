@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blind Watermark — Nhúng & trích watermark ẩn trên ảnh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink-50:#F5F3FF;
+    --pink-100:#EAE5FF;
+    --pink-300:#C2B2FF;
+    --pink-600:#6D54F0;
+    --pink-700:#5642C9;
+    --ink:#1F1B2E;
+    --ink-soft:#6E6678;
+    --white:#FFFFFF;
+    --line:#E6E1F2;
+    --mono: 'JetBrains Mono', monospace;
+    --display: 'Outfit', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:var(--body);
+    color:var(--ink);
+    background:var(--white);
+    line-height:1.6;
+    overflow-x:hidden;
+  }
+  a{color:inherit; text-decoration:none;}
+  img,svg{display:block; max-width:100%;}
+
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+
+  /* NAV */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; max-width:1080px; margin:0 auto;
+  }
+  .logo{
+    font-family:var(--display); font-weight:800; font-size:18px;
+    display:flex; align-items:center; gap:8px;
+    white-space:nowrap; flex-shrink:0;
+}
+  .logo-dot{width:10px; height:10px; border-radius:3px; background:var(--pink-600); transform:rotate(45deg);}
+  .nav-links{display:flex; gap:32px; font-size:14px; font-weight:500; color:var(--ink-soft);}
+  .nav-links a:hover{color:var(--pink-700);}
+  .nav-cta{
+    background:var(--ink); color:var(--white); padding:10px 20px;
+    border-radius:999px; font-size:14px; font-weight:600;
+    white-space:nowrap; flex-shrink:0;
+    transition:transform .15s ease, background .2s ease;
+  }
+  .nav-cta:hover{background:var(--pink-600); transform:translateY(-1px);}
+
+.nav-other{
+  display:flex; align-items:center; gap:6px;
+  border:1.5px solid var(--line); color:var(--ink-soft);
+  padding:8px 16px; border-radius:999px; font-size:13px; font-weight:600;
+  white-space:nowrap;
+  transition:border-color .2s ease, color .2s ease;
+}
+.nav-other:hover{border-color:var(--pink-300); color:var(--pink-700);}
+  /* HERO */
+  .hero{
+    position:relative;
+    padding:96px 0 80px;
+    overflow:hidden;
+  }
+  .hero-bg{
+    position:absolute; inset:0; z-index:-1;
+    background:
+      radial-gradient(circle at 85% 10%, var(--pink-100) 0%, transparent 55%),
+      radial-gradient(circle at 0% 80%, var(--pink-50) 0%, transparent 50%);
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:12px; letter-spacing:0.05em;
+    color:var(--pink-700); background:var(--pink-50);
+    border:1px solid var(--pink-300); border-radius:999px;
+    padding:6px 14px; margin-bottom:24px;
+  }
+  .eyebrow .pulse{width:6px; height:6px; border-radius:50%; background:var(--pink-600); animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.3;}}
+
+  h1{
+    font-family:var(--display); font-weight:800;
+    font-size:clamp(36px, 6vw, 64px);
+    line-height:1.05; letter-spacing:-0.02em;
+    max-width:760px;
+  }
+  h1 .accent{color:var(--pink-600); position:relative; white-space:nowrap;}
+  h1 .accent svg{position:absolute; left:0; bottom:-6px; width:100%; height:10px;}
+
+  .hero-sub{
+    margin-top:24px; font-size:18px; color:var(--ink-soft);
+    max-width:560px;
+  }
+  .hero-actions{
+    margin-top:36px; display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+  }
+  .btn-primary{
+    background:var(--pink-600); color:var(--white);
+    padding:15px 28px; border-radius:12px;
+    font-weight:600; font-size:15px;
+    display:inline-flex; align-items:center; gap:10px;
+    box-shadow:0 10px 24px -8px rgba(109,84,240,.55);
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .btn-primary:hover{transform:translateY(-2px); background:var(--pink-700); box-shadow:0 14px 28px -8px rgba(86,66,201,.6);}
+  .btn-secondary{
+    border:1.5px solid var(--line); color:var(--ink);
+    padding:14px 24px; border-radius:12px; font-weight:600; font-size:15px;
+    transition:border-color .2s ease, background .2s ease;
+  }
+  .btn-secondary:hover{border-color:var(--pink-300); background:var(--pink-50);}
+  .hero-meta{
+    margin-top:14px; font-size:13px; color:var(--ink-soft); font-family:var(--mono);
+  }
+
+  /* SIGNATURE PIPELINE STRIP */
+  .pipeline{
+    margin-top:72px;
+    border:1px solid var(--line); border-radius:20px;
+    background:linear-gradient(180deg, var(--white), var(--pink-50));
+    padding:28px 28px 22px;
+    overflow:hidden;
+  }
+  .pipeline-row{
+    display:flex; align-items:center; gap:0; flex-wrap:nowrap;
+    overflow-x:auto; padding-bottom:6px;
+  }
+  .pipe-step{
+    flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:10px;
+    min-width:108px; text-align:center;
+  }
+  .pipe-icon{
+    width:48px; height:48px; border-radius:14px;
+    background:var(--white); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px;
+  }
+  .pipe-label{font-size:12px; color:var(--ink-soft); font-weight:500;}
+  .pipe-lang{font-family:var(--mono); font-size:11px; color:var(--pink-700); font-weight:600;}
+  .pipe-arrow{flex:0 0 auto; width:32px; color:var(--pink-300); display:flex; align-items:center; justify-content:center;}
+  .pipe-arrow svg{width:100%;}
+
+  /* SECTION shared */
+  section{padding:88px 0;}
+  .section-head{max-width:600px; margin-bottom:48px;}
+  .section-tag{
+    font-family:var(--mono); font-size:12px; color:var(--pink-700);
+    text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; display:block;
+  }
+  h2{
+    font-family:var(--display); font-weight:700;
+    font-size:clamp(26px, 4vw, 38px); letter-spacing:-0.01em;
+  }
+  .section-sub{margin-top:12px; color:var(--ink-soft); font-size:16px;}
+
+  /* FEATURES */
+  .features{background:var(--pink-50);}
+  .feature-grid{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:20px;
+  }
+  .feature-card{
+    background:var(--white); border:1px solid var(--line); border-radius:18px;
+    padding:28px; transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .feature-card:hover{transform:translateY(-4px); box-shadow:0 16px 32px -16px rgba(31,27,46,.15);}
+  .feature-icon{
+    width:44px; height:44px; border-radius:12px;
+    background:var(--pink-100); color:var(--pink-700);
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    margin-bottom:18px;
+  }
+  .feature-card h3{font-family:var(--display); font-size:17px; font-weight:700; margin-bottom:8px;}
+  .feature-card p{font-size:14px; color:var(--ink-soft);}
+
+  /* PLATFORMS */
+  .platforms{display:flex; gap:16px; flex-wrap:wrap; margin-top:8px;}
+  .platform-chip{
+    display:flex; align-items:center; gap:10px;
+    border:1px solid var(--line); border-radius:999px;
+    padding:10px 18px; font-size:14px; font-weight:600;
+    background:var(--white);
+  }
+  .platform-chip .dot{width:8px; height:8px; border-radius:50%;}
+
+  /* HOW IT WORKS / OFFLINE */
+  .offline-box{
+    display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-items:center;
+  }
+  .offline-card{
+    background:var(--ink); color:var(--white); border-radius:20px; padding:32px;
+    font-family:var(--mono); font-size:13px; position:relative; overflow:hidden;
+  }
+  .offline-card::before{
+    content:""; position:absolute; top:-40%; right:-20%; width:240px; height:240px;
+    background:radial-gradient(circle, rgba(109,84,240,.35), transparent 70%);
+  }
+  .offline-line{display:flex; gap:10px; margin-bottom:10px; opacity:0; animation:typeIn .5s ease forwards;}
+  .offline-line:nth-child(1){animation-delay:.1s;}
+  .offline-line:nth-child(2){animation-delay:.3s;}
+  .offline-line:nth-child(3){animation-delay:.5s;}
+  .offline-line:nth-child(4){animation-delay:.7s;}
+  .offline-line:nth-child(5){animation-delay:.9s;}
+  @keyframes typeIn{from{opacity:0; transform:translateX(-6px);} to{opacity:1; transform:translateX(0);}}
+  .ok{color:#7CFFB2;}
+  .warn{color:var(--pink-300);}
+  .muted{color:#8B8696;}
+
+  /* DOWNLOAD CTA */
+  .download{
+    background:var(--ink); color:var(--white); border-radius:28px;
+    padding:64px 48px; text-align:center; position:relative; overflow:hidden;
+    margin:0 24px;
+  }
+  .download::before{
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(circle at 50% 0%, rgba(109,84,240,.4), transparent 60%);
+  }
+  .download-inner{position:relative; z-index:1;}
+  .download h2{color:var(--white);}
+  .download p{color:#C9C3D6; margin-top:12px; max-width:480px; margin-left:auto; margin-right:auto;}
+  .download .btn-primary{margin-top:28px;}
+  .req{
+    margin-top:24px; font-family:var(--mono); font-size:12px; color:#8B8696;
+  }
+
+  footer{
+    padding:40px 0; text-align:center; color:var(--ink-soft); font-size:13px;
+    border-top:1px solid var(--line); margin-top:40px;
+  }
+
+  /* TOAST */
+  .toast{
+    position:fixed; left:50%; bottom:32px; z-index:100;
+    transform:translate(-50%, 20px);
+    background:var(--ink); color:var(--white);
+    padding:14px 20px; border-radius:14px;
+    display:flex; align-items:center; gap:12px;
+    font-size:14px; font-weight:500;
+    box-shadow:0 16px 36px -12px rgba(31,27,46,.45);
+    opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    max-width:90vw;
+  }
+  .toast.show{opacity:1; transform:translate(-50%, 0); pointer-events:auto;}
+  .toast-icon{
+    width:28px; height:28px; border-radius:50%; flex:0 0 auto;
+    background:var(--pink-600); display:flex; align-items:center; justify-content:center;
+    font-size:14px;
+  }
+  .toast-text strong{color:var(--pink-300);}
+
+  /* CONTACT MODAL */
+  .modal-overlay{
+    position:fixed; inset:0; z-index:200;
+    background:rgba(31,27,46,.55);
+    backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:var(--white); border-radius:24px;
+    width:100%; max-width:420px;
+    padding:36px 32px; position:relative;
+    box-shadow:0 30px 60px -20px rgba(31,27,46,.4);
+    max-height:90vh; overflow-y:auto;
+  }
+  .modal-close{
+    position:absolute; top:18px; right:18px;
+    width:32px; height:32px; border-radius:50%;
+    border:1px solid var(--line); background:var(--white);
+    font-size:16px; cursor:pointer; color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+    transition:background .2s ease;
+  }
+  .modal-close:hover{background:var(--pink-50);}
+  .modal-box h3{
+    font-family:var(--display); font-weight:800; font-size:21px; text-align:center;
+    margin-bottom:6px;
+  }
+  .modal-sub{
+    text-align:center; font-size:13px; color:var(--pink-700); font-weight:600;
+    background:var(--pink-50); border:1px solid var(--pink-300);
+    border-radius:999px; padding:6px 14px; display:inline-block;
+    margin:0 auto 24px; width:100%; text-align:center; box-sizing:border-box;
+  }
+  .modal-form{display:flex; flex-direction:column; gap:12px;}
+  .modal-form input, .modal-form select{
+    width:100%; padding:13px 16px; border-radius:12px;
+    border:1.5px solid var(--line); font-size:14px; font-family:var(--body);
+    color:var(--ink); background:var(--white);
+    transition:border-color .2s ease;
+  }
+  .modal-form input::placeholder{color:#B8B2C4;}
+  .modal-form input:focus, .modal-form select:focus{
+    outline:none; border-color:var(--pink-600);
+  }
+  .modal-form select{color:#6E6678; appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236E6678' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 16px center;
+  }
+  .modal-submit{
+    margin-top:6px; width:100%; border:none; cursor:pointer;
+    background:linear-gradient(90deg, var(--pink-600), var(--pink-700));
+    color:var(--white); font-weight:700; font-size:14px;
+    letter-spacing:.03em; padding:15px; border-radius:12px;
+    transition:transform .15s ease, opacity .2s ease;
+  }
+  .modal-submit:hover{transform:translateY(-2px);}
+  .modal-submit:disabled{opacity:.7; cursor:default; transform:none;}
+  .modal-success{
+    display:none; text-align:center; padding:20px 0;
+  }
+  .modal-success .check{
+    width:56px; height:56px; border-radius:50%; background:var(--pink-50);
+    color:var(--pink-600); font-size:26px; display:flex; align-items:center;
+    justify-content:center; margin:0 auto 16px;
+  }
+  .modal-success h4{font-family:var(--display); font-size:18px; margin-bottom:8px;}
+  .modal-success p{font-size:14px; color:var(--ink-soft);}
+  .nav-phone{
+    display:flex; align-items:center; gap:6px;
+    border:1.5px solid var(--pink-300); color:var(--pink-700);
+    padding:8px 16px; border-radius:999px; font-size:13px; font-weight:600;
+    white-space:nowrap;
+  }
+
+  @media (max-width:760px){
+    .feature-grid{grid-template-columns:1fr;}
+    .offline-box{grid-template-columns:1fr;}
+    .nav-links{display:none;}
+    .nav-phone{display:none;}
+    .download{margin:0 16px; padding:48px 24px;}
+    .nav-phone, .nav-other{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <div class="logo"><span class="logo-dot"></span>🔒 Blind Watermark</div>
+    <div class="nav-links">
+      <a href="#features">Tính năng</a>
+      <a href="#pipeline">Cách hoạt động</a>
+      <!-- <a href="#offline">Riêng tư &amp; offline</a> -->
+      <a href="#" onclick="openContact(event)">Liên hệ</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <a href="https://lephiha.github.io/AI_translate_video_website/" target="_blank" class="nav-other">🎬 Auto Translate Video</a>
+      <a href="tel:0392405600" class="nav-phone">📞 0392 405 600</a>
+      <a href="#download" class="nav-cta">Tải app</a>
+    </div>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="wrap">
+    <div class="eyebrow"><span class="pulse"></span>App desktop cho Windows · 100 lượt dùng miễn phí</div>
+    <h1>Giấu watermark trong ảnh,<br><span class="accent">không ai nhìn thấy được</span></h1>
+    <p class="hero-sub">Nhúng watermark ẩn vào ảnh bằng 2 lớp password — vẫn trích lại được sau khi ảnh bị resize, crop hoặc xoay ở mức vừa phải. Đóng thêm chữ ký/logo, xử lý hàng loạt, tất cả ngay trên máy bạn.</p>
+    <div class="hero-actions">
+      <a href="https://drive.google.com/uc?export=download&id=17vdgvfIBuYjj-9AtCw29WR_PM-vKjSqU" class="btn-primary">Tải bản cài đặt (.exe) ↓</a>
+      <a href="#pipeline" class="btn-secondary">Xem cách hoạt động</a>
+    </div>
+    <div class="hero-meta">windows 10/11 · không cần internet · ảnh không rời khỏi máy bạn</div>
+
+    <div class="pipeline" id="pipeline">
+      <div class="pipeline-row">
+        <div class="pipe-step">
+          <div class="pipe-icon">🖼️</div>
+          <div class="pipe-label">Chọn ảnh</div>
+          <div class="pipe-lang">PNG·JPG·BMP</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 24 8"><path d="M0 4h20M16 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🔑</div>
+          <div class="pipe-label">Đặt password</div>
+          <div class="pipe-lang">2 lớp</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 24 8"><path d="M0 4h20M16 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🫥</div>
+          <div class="pipe-label">Nhúng watermark</div>
+          <div class="pipe-lang">ẩn 100%</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 24 8"><path d="M0 4h20M16 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🔍</div>
+          <div class="pipe-label">Trích watermark</div>
+          <div class="pipe-lang">xác minh</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 24 8"><path d="M0 4h20M16 1l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div>
+        <div class="pipe-step">
+          <div class="pipe-icon">📦</div>
+          <div class="pipe-label">Xuất / tải</div>
+          <div class="pipe-lang">ZIP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-tag">Tính năng</span>
+      <h2>Một app, làm hết mọi bước</h2>
+      <p class="section-sub">Từ ảnh gốc đến ảnh đã có watermark — không cần upload lên đâu, không cần biết kỹ thuật.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🫥</div>
+        <h3>Watermark ẩn, bền vững</h3>
+        <p>Nhúng chữ vào ảnh mà mắt thường không thấy, vẫn trích lại được sau khi ảnh bị resize, crop hoặc xoay ở mức vừa phải.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Bảo mật 2 lớp password</h3>
+        <p>Password ảnh và password watermark tách riêng — chỉ ai biết đúng cả hai mới trích được nội dung.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Xử lý hàng loạt</h3>
+        <p>Nhúng hoặc trích watermark cho hàng trăm ảnh cùng lúc, chạy song song theo số core CPU, theo dõi tiến độ trực tiếp.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✍️</div>
+        <h3>Chữ ký / logo trên ảnh</h3>
+        <p>Đóng chữ ký hoặc logo hiển thị rõ lên ảnh, chỉnh vị trí trên ảnh mẫu rồi áp dụng cho cả batch.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Tự sửa ảnh chụp bị xoay</h3>
+        <p>Tự động nhận và sửa hướng ảnh (EXIF) — ảnh chụp từ điện thoại, máy ảnh không còn bị lật hay xoay sai khi xử lý.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🗂️</div>
+        <h3>Tải kết quả gọn gàng</h3>
+        <p>Tải từng ảnh hoặc gộp cả batch thành 1 file ZIP. Ảnh lỗi được báo riêng mà không làm dừng cả tiến trình.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="offline">
+  <div class="wrap">
+    <div class="offline-box">
+      <div>
+        <span class="section-tag">Riêng tư &amp; offline</span>
+        <h2>Ảnh của bạn không rời khỏi máy</h2>
+        <p class="section-sub">Toàn bộ việc nhúng và trích watermark chạy ngay trên máy bạn. App không upload ảnh lên server nào, không cần kết nối mạng để xử lý — kể cả khi chạy hàng loạt nhiều ảnh.</p>
+      </div>
+      <div class="offline-card">
+        <div class="offline-line"><span class="muted">[batch]</span> <span class="ok">Đang xử lý 24 ảnh…</span></div>
+        <div class="offline-line"><span class="muted">[batch]</span> <span class="warn">anh_017.jpg lỗi định dạng → bỏ qua, tiếp tục</span></div>
+        <div class="offline-line"><span class="muted">[batch]</span> <span class="ok">Chạy song song trên 8 core CPU ✓</span></div>
+        <div class="offline-line"><span class="muted">[xong]</span> <span class="ok">23/24 ảnh nhúng watermark thành công ✓</span></div>
+        <div class="offline-line"><span class="muted">[bảo mật]</span> <span class="ok">Xử lý 100% local, không gửi ảnh đi đâu ✓</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <div class="download-inner wrap">
+    <span class="section-tag" style="color:var(--pink-300)">Bắt đầu ngay</span>
+    <h2>Tải Blind Watermark</h2>
+    <p>Bản cài đặt cho Windows 10/11. Mở lên là dùng được ngay, không cần cài thêm phần mềm nào khác.</p>
+    <a href="https://drive.google.com/file/d/17vdgvfIBuYjj-9AtCw29WR_PM-vKjSqU/view?usp=sharing" class="btn-primary">Tải xuống từ Google Drive ↓</a>
+    <div class="req">windows 10/11 · không cần internet · ảnh xử lý 100% trên máy</div>
+  </div>
+</section>
+
+<footer>
+  © 2026 Blind Watermark · 1 sản phẩm đến từ @Phi Hà <a href="https://lephiha.github.io" style="text-decoration:underline;">lephiha</a>
+</footer>
+
+<div class="modal-overlay" id="contactModal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeContact()" type="button">✕</button>
+
+    <form class="modal-form" id="modalRegForm">
+      <h3>ĐĂNG KÝ NHẬN TƯ VẤN</h3>
+      <span class="modal-sub">💬 Phản hồi trong vòng 24h</span>
+      <input type="text" name="name" placeholder="Họ và tên *" required>
+      <input type="email" name="email" placeholder="Email *" required>
+      <input type="tel" name="phone" placeholder="Số điện thoại *" required>
+      <select name="product">
+        <option value="" disabled selected>Bạn quan tâm tới gì?</option>
+        <option value="Blind Watermark">Blind Watermark (nhúng/trích watermark ẩn)</option>
+        <option value="Tư vấn chung">Tư vấn chung / hợp tác</option>
+        <option value="Báo lỗi / Hỗ trợ">Báo lỗi / Hỗ trợ kỹ thuật</option>
+      </select>
+      <button type="submit" class="modal-submit">GỬI LIÊN HỆ</button>
+    </form>
+
+    <div class="modal-success" id="modalSuccess">
+      <div class="check">✓</div>
+      <h4>Đã gửi thành công!</h4>
+      <p>Cảm ơn bạn đã liên hệ, mình sẽ phản hồi sớm nhất qua email/SĐT bạn cung cấp.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  /* EmailJS init — thay 3 giá trị dưới bằng Service ID / Template ID / Public Key của bạn trên emailjs.com nếu khác app trước */
+  emailjs.init("VxLy2TYylhklg9NR5");
+
+  function openContact(e){
+    if(e) e.preventDefault();
+    document.getElementById('contactModal').classList.add('open');
+  }
+  function closeContact(){
+    document.getElementById('contactModal').classList.remove('open');
+  }
+  document.getElementById('contactModal').addEventListener('click', function(e){
+    if(e.target === this) closeContact();
+  });
+
+  document.getElementById("modalRegForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const btn = this.querySelector("button[type=submit]");
+    const d   = Object.fromEntries(new FormData(this));
+
+    btn.textContent = "Đang gửi...";
+    btn.disabled    = true;
+
+    emailjs.send(
+      "service_otgtprc",
+      "template_arc7kyn",
+      {
+        to_email : "phihasky@gmail.com",
+        from_name: d.name,
+        email    : d.email,
+        phone    : d.phone,
+        product  : d.product || "N/A",
+      }
+    )
+    .then(() => {
+      this.style.display = "none";
+      document.getElementById("modalSuccess").style.display = "block";
+    })
+    .catch(err => {
+      btn.textContent = "GỬI LIÊN HỆ";
+      btn.disabled    = false;
+      alert("Gửi thất bại, vui lòng thử lại hoặc gọi 0392 405 600!");
+      console.error(err);
+    });
+  });
+</script>
+
+</body>
+</html>
